@@ -55,19 +55,19 @@ TEST(solovev_a_ccs_mmult_sparse_omp, test_I) {
 
 TEST(solovev_a_ccs_mmult_sparse_omp, test_zero_matrix_random) {
   const int size = 50;
-  solovev_a_matrix_omp::MatrixInCcsSparse m1(size, size, 0);  
-  solovev_a_matrix_omp::MatrixInCcsSparse m2(size, size, 0);  
-  solovev_a_matrix_omp::MatrixInCcsSparse m3(size, size, 0);  
+  solovev_a_matrix_omp::MatrixInCcsSparse m1(size, size, 0);
+  solovev_a_matrix_omp::MatrixInCcsSparse m2(size, size, 0);
+  solovev_a_matrix_omp::MatrixInCcsSparse m3(size, size, 0);
 
   for (int i = 0; i < size; i++) {
     m2.col_p.push_back(i);
     m2.row.push_back(i);
-    m2.val.push_back(GenerateRandomComplex(-10.0, 10.0));  
+    m2.val.push_back(GenerateRandomComplex(-10.0, 10.0));
   }
 
   std::shared_ptr<ppc::core::TaskData> task_data_omp = std::make_shared<ppc::core::TaskData>();
-  task_data_omp->inputs.emplace_back(reinterpret_cast<uint8_t*>(&m1));  
-  task_data_omp->inputs.emplace_back(reinterpret_cast<uint8_t*>(&m2));  
+  task_data_omp->inputs.emplace_back(reinterpret_cast<uint8_t*>(&m1));
+  task_data_omp->inputs.emplace_back(reinterpret_cast<uint8_t*>(&m2));
   task_data_omp->outputs.emplace_back(reinterpret_cast<uint8_t*>(&m3));
 
   solovev_a_matrix_omp::OMPMatMultCcs test_task_omp(task_data_omp);
