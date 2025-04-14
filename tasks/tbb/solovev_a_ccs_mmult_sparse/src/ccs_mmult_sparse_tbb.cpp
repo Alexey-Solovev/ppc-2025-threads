@@ -1,11 +1,10 @@
 #include "tbb/solovev_a_ccs_mmult_sparse/include/ccs_mmult_sparse_tbb.hpp"
 
-#include <complex>
-#include <vector>
-
 #include <oneapi/tbb/blocked_range.h>
 #include <oneapi/tbb/parallel_for.h>
 
+#include <complex>
+#include <vector>
 
 void solovev_a_matrix_tbb::TBBMatMultCcs::ComputeColumnSizes() {
   tbb::parallel_for(tbb::blocked_range<int>(0, M3_->c_n), [&](const tbb::blocked_range<int>& r) {
