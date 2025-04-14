@@ -2,10 +2,12 @@
 
 #include <complex>
 #include <vector>
+#include <memory>
 
 #include "core/task/include/task.hpp"
 
 namespace solovev_a_matrix_tbb {
+
 struct MatrixInCcsSparse {
   std::vector<std::complex<double>> val;
   std::vector<int> row;
@@ -16,24 +18,30 @@ struct MatrixInCcsSparse {
   int n_z;
 
   MatrixInCcsSparse(int r_nn = 0, int c_nn = 0, int n_zz = 0) {
-    c_n = c_nn;
     r_n = r_nn;
+    c_n = c_nn;
     n_z = n_zz;
     row.resize(n_z);
-    col_p.resize(r_n + 1);
+    col_p.resize(c_n + 1);
     val.resize(n_z);
   }
 };
 
 class TBBMatMultCcs : public ppc::core::Task {
  public:
-  explicit TBBMatMultCcs(std::shared_ptr<ppc::core::TaskData> task_data) : Task(std::move(task_data)) {}
+  explicit TBBMatMultCcs(std::shared_ptr<ppc::core::TaskData> task_data)
+      : Task(std::move(task_data)) {}
+
   bool PreProcessingImpl() override;
   bool ValidationImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
  private:
+  void ComputeColumnSizes();
+  void FillMatrixValues();
+
   MatrixInCcsSparse *M1_, *M2_, *M3_;
 };
+
 }  // namespace solovev_a_matrix_tbb
