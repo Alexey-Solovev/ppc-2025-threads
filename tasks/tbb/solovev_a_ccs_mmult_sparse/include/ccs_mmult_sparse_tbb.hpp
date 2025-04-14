@@ -1,8 +1,8 @@
 #pragma once
 
 #include <complex>
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "core/task/include/task.hpp"
 
@@ -29,9 +29,7 @@ struct MatrixInCcsSparse {
 
 class TBBMatMultCcs : public ppc::core::Task {
  public:
-  explicit TBBMatMultCcs(std::shared_ptr<ppc::core::TaskData> task_data)
-      : Task(std::move(task_data)) {}
-
+  explicit TBBMatMultCcs(std::shared_ptr<ppc::core::TaskData> task_data) : Task(std::move(task_data)) {}
   bool PreProcessingImpl() override;
   bool ValidationImpl() override;
   bool RunImpl() override;
