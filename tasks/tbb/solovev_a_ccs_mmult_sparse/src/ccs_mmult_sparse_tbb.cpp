@@ -89,7 +89,7 @@ bool solovev_a_matrix_tbb::TBBMatMultCcs::RunImpl() {
   return true;
 }
 
-  return true;
+return true;
 }
 
 bool solovev_a_matrix_tbb::TBBMatMultCcs::PostProcessingImpl() { return true; }
