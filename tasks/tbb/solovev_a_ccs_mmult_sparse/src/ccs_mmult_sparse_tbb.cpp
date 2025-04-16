@@ -62,7 +62,7 @@ bool solovev_a_matrix_tbb::TBBMatMultCcs::PreProcessingImpl() {
   return true;
 }
 
-bool solovev_a_matrix_omp::OMPMatMultCcs::ValidationImpl() {
+bool solovev_a_matrix_tbb::TBBMatMultCcs::ValidationImpl() {
   auto* m1_c_n = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[0]);
   auto* m2_r_n = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[1]);
   return (m1_c_n->c_n == m2_r_n->r_n);
