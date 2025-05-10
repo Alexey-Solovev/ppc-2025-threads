@@ -127,4 +127,3 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
 }
 
 bool solovev_a_matrix_stl::SeqMatMultCcs::PostProcessingImpl() { return true; }
-
