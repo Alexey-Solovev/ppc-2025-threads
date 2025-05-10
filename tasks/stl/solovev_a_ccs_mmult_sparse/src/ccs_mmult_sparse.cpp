@@ -12,10 +12,10 @@ void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqM
 
     {
       std::unique_lock<std::mutex> lk(self->mtx_);
-      self->cv_.wait(lk, [&]() { return self->phase_ != 0; });
-      if (self->phase_ == 3) return;
+      self->cv_.wait(lk, [&]() { return self->phase_ != 0 || self->terminate_; });
+      if (self->terminate_) return;
       if (self->next_col_ >= self->c_n_) {
-        self->cv_.notify_all();
+        self->cv_done_.notify_all();
         continue;
       }
       col = self->next_col_++;
@@ -52,10 +52,12 @@ void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqM
         }
       }
     }
+
     {
       std::unique_lock<std::mutex> lk(self->mtx_);
-      if (self->next_col_ >= self->c_n_) {
-        self->cv_.notify_all();
+      self->completed_++;
+      if (self->completed_ >= self->c_n_) {
+        self->cv_done_.notify_all();
       }
     }
   }
@@ -85,16 +87,16 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
     unsigned th = std::thread::hardware_concurrency();
     if (!th) th = 1;
     for (unsigned i = 0; i < th; ++i) {
-      workers_.push_back(std::thread(solovev_a_matrix_stl::SeqMatMultCcs::worker_loop, this));
+      workers_.emplace_back(worker_loop, this);
     }
   });
-
-  next_col_ = 0;
-  phase_ = 1;
-  cv_.notify_all();
   {
     std::unique_lock<std::mutex> lk(mtx_);
-    cv_.wait(lk, [&]() { return next_col_ >= c_n_; });
+    next_col_ = 0;
+    completed_ = 0;
+    phase_ = 1;
+    cv_.notify_all();
+    cv_done_.wait(lk, [&]() { return completed_ >= c_n_; });
   }
 
   M3_->col_p.resize(c_n_ + 1);
@@ -102,26 +104,27 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
   for (int i = 0; i < c_n_; ++i) {
     M3_->col_p[i + 1] = M3_->col_p[i] + counts_[i];
   }
-
   int total = M3_->col_p[c_n_];
   M3_->n_z = total;
   M3_->row.resize(total);
   M3_->val.resize(total);
-
-  next_col_ = 0;
-  phase_ = 2;
-  cv_.notify_all();
   {
     std::unique_lock<std::mutex> lk(mtx_);
-    cv_.wait(lk, [&]() { return next_col_ >= c_n_; });
+    next_col_ = 0;
+    completed_ = 0;
+    phase_ = 2;
+    cv_.notify_all();
+    cv_done_.wait(lk, [&]() { return completed_ >= c_n_; });
   }
-
-  phase_ = 3;
-  cv_.notify_all();
+  {
+    std::unique_lock<std::mutex> lk(mtx_);
+    terminate_ = true;
+    cv_.notify_all();
+  }
   for (auto& th : workers_) th.join();
   workers_.clear();
-
   return true;
 }
 
 bool solovev_a_matrix_stl::SeqMatMultCcs::PostProcessingImpl() { return true; }
+
