@@ -52,6 +52,12 @@ void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqM
         }
       }
     }
+    {
+      std::unique_lock<std::mutex> lk(self->mtx_);
+      if (self->next_col_ >= self->c_n_) {
+        self->cv_.notify_all();
+      }
+    }
   }
 }
 
