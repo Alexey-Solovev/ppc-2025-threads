@@ -65,8 +65,8 @@ void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqM
 }
 
 bool solovev_a_matrix_stl::SeqMatMultCcs::PreProcessingImpl() {
-  M1_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[0]);
-  M2_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[1]);
+  M1_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[1]);
+  M2_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[0]);
   M3_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->outputs[0]);
   return true;
 }
