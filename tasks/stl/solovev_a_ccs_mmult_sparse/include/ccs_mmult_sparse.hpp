@@ -30,9 +30,7 @@ struct MatrixInCcsSparse {
 
 class SeqMatMultCcs : public ppc::core::Task {
  public:
-  explicit SeqMatMultCcs(std::shared_ptr<ppc::core::TaskData> task_data)
-      : Task(std::move(task_data)) {}
-
+  explicit SeqMatMultCcs(std::shared_ptr<ppc::core::TaskData> task_data) : Task(std::move(task_data)) {}
   bool PreProcessingImpl() override;
   bool ValidationImpl() override;
   bool RunImpl() override;
