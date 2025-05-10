@@ -13,7 +13,14 @@ void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqM
     int phase = self->phase_;
     int col = self->next_col_.fetch_add(1);
     lk.unlock();
-
+    if (col >= self->c_n_) {
+      lk.lock();
+      if (self->next_col_ >= self->c_n_) {
+        self->cv_.notify_all();
+      }
+      lk.unlock();
+      continue;
+    }
     if (phase == 1) {
       {
         available.assign(self->r_n_, 0);
