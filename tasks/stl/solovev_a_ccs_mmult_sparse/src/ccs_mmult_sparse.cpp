@@ -81,7 +81,7 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
     unsigned th = std::thread::hardware_concurrency();
     if (!th) th = 1;
     for (unsigned i = 0; i < th; ++i) {
-      workers_.push_back(std::thread(solovev_a_matrix_stl::SeqMatMultCcs::worker_loop, this)); 
+      workers_.push_back(std::thread(solovev_a_matrix_stl::SeqMatMultCcs::worker_loop, this));
     }
   });
 
