@@ -50,7 +50,7 @@ class SeqMatMultCcs : public ppc::core::Task {
   std::atomic<int> completed_{0};
   int phase_ = 0;
   int r_n_ = 0, c_n_ = 0;
-  bool terminate_ = false;
+  std::atomic<bool> terminate_{false};
 
   std::vector<int> counts_;
 };
