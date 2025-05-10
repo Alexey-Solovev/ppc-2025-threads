@@ -28,7 +28,7 @@ struct MatrixInCcsSparse {
     r_n = r_nn;
     n_z = n_zz;
     row.resize(n_z);
-    col_p.resize(r_n + 1);
+    col_p.resize(c_n + 1);
     val.resize(n_z);
   }
 };
