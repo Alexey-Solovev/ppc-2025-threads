@@ -4,27 +4,21 @@
 #include <vector>
 
 void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqMatMultCcs* self) {
-  std::vector<int> available;
-  std::vector<std::complex<double>> cask;
+  thread_local std::vector<int> available;
+  thread_local std::vector<std::complex<double>> cask;
 
   while (true) {
-    int col;
+    if (self->terminate_.load()) return;
 
-    {
-      std::unique_lock<std::mutex> lk(self->mtx_);
-      self->cv_.wait(lk, [&]() { return self->phase_ != 0 || self->terminate_; });
-      if (self->terminate_) return;
-      if (self->next_col_ >= self->c_n_) {
-        self->cv_done_.notify_all();
-        continue;
-      }
-      col = self->next_col_++;
+    int col = self->next_col_.fetch_add(1);
+    if (col >= self->c_n_) {
+      std::this_thread::yield();
+      continue;
     }
 
-    if (col >= self->c_n_) continue;
+    available.assign(self->r_n_, 0);
 
     if (self->phase_ == 1) {
-      available.assign(self->r_n_, 0);
       for (int i = self->M2_->col_p[col]; i < self->M2_->col_p[col + 1]; ++i) {
         int r = self->M2_->row[i];
         for (int j = self->M1_->col_p[r]; j < self->M1_->col_p[r + 1]; ++j) {
@@ -33,7 +27,6 @@ void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqM
       }
       self->counts_[col] = std::accumulate(available.begin(), available.end(), 0);
     } else if (self->phase_ == 2) {
-      available.assign(self->r_n_, 0);
       cask.assign(self->r_n_, {0.0, 0.0});
       for (int i = self->M2_->col_p[col]; i < self->M2_->col_p[col + 1]; ++i) {
         int r = self->M2_->row[i];
@@ -53,12 +46,10 @@ void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqM
       }
     }
 
-    {
-      std::unique_lock<std::mutex> lk(self->mtx_);
-      self->completed_++;
-      if (self->completed_ >= self->c_n_) {
-        self->cv_done_.notify_all();
-      }
+    int done = self->completed_.fetch_add(1) + 1;
+    if (done == self->c_n_) {
+      std::lock_guard<std::mutex> lk(self->mtx_);
+      self->cv_done_.notify_all();
     }
   }
 }
@@ -90,13 +81,13 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
       workers_.emplace_back(worker_loop, this);
     }
   });
+
+  next_col_.store(0);
+  completed_.store(0);
+  phase_ = 1;
   {
     std::unique_lock<std::mutex> lk(mtx_);
-    next_col_ = 0;
-    completed_ = 0;
-    phase_ = 1;
-    cv_.notify_all();
-    cv_done_.wait(lk, [&]() { return completed_ >= c_n_; });
+    cv_done_.wait(lk, [&]() { return completed_.load() >= c_n_; });
   }
 
   M3_->col_p.resize(c_n_ + 1);
@@ -108,21 +99,19 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
   M3_->n_z = total;
   M3_->row.resize(total);
   M3_->val.resize(total);
+
+  next_col_.store(0);
+  completed_.store(0);
+  phase_ = 2;
   {
     std::unique_lock<std::mutex> lk(mtx_);
-    next_col_ = 0;
-    completed_ = 0;
-    phase_ = 2;
-    cv_.notify_all();
-    cv_done_.wait(lk, [&]() { return completed_ >= c_n_; });
+    cv_done_.wait(lk, [&]() { return completed_.load() >= c_n_; });
   }
-  {
-    std::unique_lock<std::mutex> lk(mtx_);
-    terminate_ = true;
-    cv_.notify_all();
-  }
+
+  terminate_.store(true);
   for (auto& th : workers_) th.join();
   workers_.clear();
+
   return true;
 }
 
