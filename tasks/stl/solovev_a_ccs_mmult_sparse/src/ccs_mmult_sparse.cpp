@@ -6,67 +6,58 @@
 void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqMatMultCcs* self) {
   std::vector<int> available;
   std::vector<std::complex<double>> cask;
+
   while (true) {
-    std::unique_lock<std::mutex> lk(self->mtx_);
-    self->cv_.wait(lk, [&]() { return self->phase_ != 0; });
-    if (self->phase_ == 3) break;
-    int phase = self->phase_;
-    int col = self->next_col_.fetch_add(1);
-    lk.unlock();
-    if (col >= self->c_n_) {
-      lk.lock();
+    int col;
+
+    {
+      std::unique_lock<std::mutex> lk(self->mtx_);
+      self->cv_.wait(lk, [&]() { return self->phase_ != 0; });
+      if (self->phase_ == 3) return;
       if (self->next_col_ >= self->c_n_) {
         self->cv_.notify_all();
+        continue;
       }
-      lk.unlock();
-      continue;
+      col = self->next_col_++;
     }
-    if (phase == 1) {
-      {
-        available.assign(self->r_n_, 0);
-        for (int i = self->M2_->col_p[col]; i < self->M2_->col_p[col + 1]; ++i) {
-          int r = self->M2_->row[i];
-          for (int j = self->M1_->col_p[r]; j < self->M1_->col_p[r + 1]; ++j) {
-            available[self->M1_->row[j]] = 1;
-          }
+
+    if (col >= self->c_n_) continue;
+
+    if (self->phase_ == 1) {
+      available.assign(self->r_n_, 0);
+      for (int i = self->M2_->col_p[col]; i < self->M2_->col_p[col + 1]; ++i) {
+        int r = self->M2_->row[i];
+        for (int j = self->M1_->col_p[r]; j < self->M1_->col_p[r + 1]; ++j) {
+          available[self->M1_->row[j]] = 1;
         }
-        self->counts_[col] = std::accumulate(available.begin(), available.end(), 0);
       }
-    } else if (phase == 2) {
-      {
-        available.assign(self->r_n_, 0);
-        cask.assign(self->r_n_, {0.0, 0.0});
-        for (int i = self->M2_->col_p[col]; i < self->M2_->col_p[col + 1]; ++i) {
-          int r = self->M2_->row[i];
-          auto v2 = self->M2_->val[i];
-          for (int j = self->M1_->col_p[r]; j < self->M1_->col_p[r + 1]; ++j) {
-            int rr = self->M1_->row[j];
-            cask[rr] += self->M1_->val[j] * v2;
-            available[rr] = 1;
-          }
+      self->counts_[col] = std::accumulate(available.begin(), available.end(), 0);
+    } else if (self->phase_ == 2) {
+      available.assign(self->r_n_, 0);
+      cask.assign(self->r_n_, {0.0, 0.0});
+      for (int i = self->M2_->col_p[col]; i < self->M2_->col_p[col + 1]; ++i) {
+        int r = self->M2_->row[i];
+        auto v2 = self->M2_->val[i];
+        for (int j = self->M1_->col_p[r]; j < self->M1_->col_p[r + 1]; ++j) {
+          int rr = self->M1_->row[j];
+          cask[rr] += self->M1_->val[j] * v2;
+          available[rr] = 1;
         }
-        int pos = self->M3_->col_p[col];
-        for (int rr = 0; rr < self->r_n_; ++rr) {
-          if (available[rr]) {
-            {
-              self->M3_->row[pos] = rr;
-            }
-            { self->M3_->val[pos++] = cask[rr]; }
-          }
+      }
+      int pos = self->M3_->col_p[col];
+      for (int rr = 0; rr < self->r_n_; ++rr) {
+        if (available[rr]) {
+          self->M3_->row[pos] = rr;
+          self->M3_->val[pos++] = cask[rr];
         }
       }
     }
-    lk.lock();
-    if (self->next_col_ >= self->c_n_) {
-      self->cv_.notify_all();
-    }
-    lk.unlock();
   }
 }
 
 bool solovev_a_matrix_stl::SeqMatMultCcs::PreProcessingImpl() {
-  M1_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[1]);
-  M2_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[0]);
+  M1_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[0]);
+  M2_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[1]);
   M3_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->outputs[0]);
   return true;
 }
