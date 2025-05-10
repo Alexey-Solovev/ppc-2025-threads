@@ -1,7 +1,7 @@
 #pragma once
 
-#include <atomic>
 #include <algorithm>
+#include <atomic>
 #include <complex>
 #include <condition_variable>
 #include <memory>
