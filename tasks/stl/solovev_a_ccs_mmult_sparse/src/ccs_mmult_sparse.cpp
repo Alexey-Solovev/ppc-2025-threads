@@ -55,15 +55,15 @@ void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqM
 }
 
 bool solovev_a_matrix_stl::SeqMatMultCcs::PreProcessingImpl() {
-  M1_ = static_cast<MatrixInCcsSparse*>(task_data->inputs[0]);
-  M2_ = static_cast<MatrixInCcsSparse*>(task_data->inputs[1]);
-  M3_ = static_cast<MatrixInCcsSparse*>(task_data->outputs[0]);
+  M1_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[0]);
+  M2_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[1]);
+  M3_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->outputs[0]);
   return true;
 }
 
 bool solovev_a_matrix_stl::SeqMatMultCcs::ValidationImpl() {
-  int m1_c_n = static_cast<MatrixInCcsSparse*>(task_data->inputs[0])->c_n;
-  int m2_r_n = static_cast<MatrixInCcsSparse*>(task_data->inputs[1])->r_n;
+  int m1_c_n = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[0])->c_n;
+  int m2_r_n = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[1])->r_n;
   return (m1_c_n == m2_r_n);
 }
 
