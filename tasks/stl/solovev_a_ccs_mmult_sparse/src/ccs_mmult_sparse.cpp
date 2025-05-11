@@ -8,7 +8,7 @@ void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqM
   thread_local std::vector<std::complex<double>> cask;
 
   while (true) {
-    if (self->terminate_.load()) return;
+    if (self->terminate_.load()) break;
 
     int col = self->next_col_.fetch_add(1);
     if (col >= self->c_n_) {
@@ -55,15 +55,15 @@ void solovev_a_matrix_stl::SeqMatMultCcs::worker_loop(solovev_a_matrix_stl::SeqM
 }
 
 bool solovev_a_matrix_stl::SeqMatMultCcs::PreProcessingImpl() {
-  M1_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[0]);
-  M2_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[1]);
-  M3_ = reinterpret_cast<MatrixInCcsSparse*>(task_data->outputs[0]);
+  M1_ = static_cast<MatrixInCcsSparse*>(task_data->inputs[0]);
+  M2_ = static_cast<MatrixInCcsSparse*>(task_data->inputs[1]);
+  M3_ = static_cast<MatrixInCcsSparse*>(task_data->outputs[0]);
   return true;
 }
 
 bool solovev_a_matrix_stl::SeqMatMultCcs::ValidationImpl() {
-  int m1_c_n = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[0])->c_n;
-  int m2_r_n = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[1])->r_n;
+  int m1_c_n = static_cast<MatrixInCcsSparse*>(task_data->inputs[0])->c_n;
+  int m2_r_n = static_cast<MatrixInCcsSparse*>(task_data->inputs[1])->r_n;
   return (m1_c_n == m2_r_n);
 }
 
@@ -76,7 +76,7 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
   std::call_once(init_flag_, [&]() {
     counts_.resize(c_n_);
     unsigned th = std::thread::hardware_concurrency();
-    if (!th) th = 1;
+    if (th == 0) th = 1;
     for (unsigned i = 0; i < th; ++i) {
       workers_.emplace_back(worker_loop, this);
     }
@@ -84,6 +84,7 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
 
   next_col_.store(0);
   completed_.store(0);
+  terminate_.store(false);
   phase_ = 1;
   {
     std::unique_lock<std::mutex> lk(mtx_);
@@ -102,6 +103,7 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
 
   next_col_.store(0);
   completed_.store(0);
+  terminate_.store(false);
   phase_ = 2;
   {
     std::unique_lock<std::mutex> lk(mtx_);
@@ -109,7 +111,9 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
   }
 
   terminate_.store(true);
-  for (auto& th : workers_) th.join();
+  for (auto& th : workers_) {
+    if (th.joinable()) th.join();
+  }
   workers_.clear();
 
   return true;
