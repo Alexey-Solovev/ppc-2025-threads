@@ -7,6 +7,8 @@
 #include <thread>
 #include <vector>
 
+#include "core/util/include/util.hpp"
+
 void solovev_a_matrix_stl::SeqMatMultCcs::ProcessPhase1(solovev_a_matrix_stl::SeqMatMultCcs* self, int col,
                                                         std::vector<int>& available) {
   for (int i = self->M2_->col_p[col]; i < self->M2_->col_p[col + 1]; ++i) {
@@ -108,10 +110,7 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
   counts_.assign(c_n_, 0);
   M3_->col_p.assign(c_n_ + 1, 0);
 
-  unsigned num_threads = std::thread::hardware_concurrency();
-  if (num_threads == 0) {
-    num_threads = 1;
-  }
+  unsigned num_threads = ppc::util::GetPPCNumThreads();
   next_col_.store(0);
   completed_.store(0);
   phase_ = 1;
