@@ -87,9 +87,9 @@ bool solovev_a_matrix_stl::SeqMatMultCcs::PreProcessingImpl() {
 }
 
 bool solovev_a_matrix_stl::SeqMatMultCcs::ValidationImpl() {
-  int m1_c_n = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[0])->c_n;
-  int m2_r_n = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[1])->r_n;
-  return (m1_c_n == m2_r_n);
+  auto* m1 = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[0]);
+  auto* m2 = reinterpret_cast<MatrixInCcsSparse*>(task_data->inputs[1]);
+  return (m1->c_n == m2->r_n);
 }
 
 bool solovev_a_matrix_stl::SeqMatMultCcs::RunImpl() {
