@@ -76,17 +76,14 @@ TEST(solovev_a_ccs_mmult_sparse_stl, test_pipeline_run) {
 }
 
 TEST(solovev_a_ccs_mmult_sparse_stl, test_task_run) {
-  int size = 2000000;
-  int nnz_per_col = 10000;  // контролируем разреженность
-
+  int size = 10000;
   solovev_a_matrix_stl::MatrixInCcsSparse m1(size, size);
   solovev_a_matrix_stl::MatrixInCcsSparse m2(size, 1);
   solovev_a_matrix_stl::MatrixInCcsSparse m3(size, 1);
 
   m1.col_p.push_back(0);
   for (int j = 0; j < size; ++j) {
-    for (int k = 0; k < nnz_per_col; ++k) {
-      int i = rand() % size;  // случайный ненулевой элемент
+    for (int i = 0; i < static_cast<int>(0.9 * size); ++i) {
       m1.val.emplace_back(GenerateRandomComplex(-10.0, 10.0));
       m1.row.push_back(i);
     }
@@ -107,8 +104,7 @@ TEST(solovev_a_ccs_mmult_sparse_stl, test_task_run) {
   auto test_task_sequential = std::make_shared<solovev_a_matrix_stl::SeqMatMultCcs>(task_data_seq);
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
-  perf_attr->num_running = 10;  // увеличено для измерения времени
-
+  perf_attr->num_running = 10000;
   const auto t0 = std::chrono::high_resolution_clock::now();
   perf_attr->current_timer = [&] {
     auto current_time_point = std::chrono::high_resolution_clock::now();
@@ -121,9 +117,8 @@ TEST(solovev_a_ccs_mmult_sparse_stl, test_task_run) {
   perf_analyzer->TaskRun(perf_attr, perf_results);
   ppc::core::Perf::PrintPerfStatistic(perf_results);
 
-  // Проверка только по первым 100 элементам результата
   for (size_t i = 0; i < std::min<size_t>(m3.val.size(), 100); ++i) {
-    ASSERT_FALSE(std::isnan(m3.val[i].real()));  // проверка на NaN
-    ASSERT_FALSE(std::isnan(m3.val[i].imag()));
+    bool approx_equal = AreComplexNumbersApproxEqual(m3.val[i], m1.val[i] * m2.val[i]);
+    ASSERT_TRUE(approx_equal);
   }
 }
