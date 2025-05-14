@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <complex>
@@ -12,6 +13,8 @@
 #include "core/perf/include/perf.hpp"
 #include "core/task/include/task.hpp"
 #include "stl/solovev_a_ccs_mmult_sparse/include/ccs_mmult_sparse.hpp"
+
+constexpr int n = 2000000;
 
 namespace {
 std::complex<double> GenerateRandomComplex(double min, double max) {
@@ -28,8 +31,8 @@ bool AreComplexNumbersApproxEqual(const std::complex<double>& c1, const std::com
 }  // namespace
 
 TEST(solovev_a_ccs_mmult_sparse_stl, test_pipeline_run) {
-  int rows = 2000000;
-  int cols = 2000000;
+  int rows = n;
+  int cols = n;
   solovev_a_matrix_stl::MatrixInCcsSparse m1(rows, cols);
   solovev_a_matrix_stl::MatrixInCcsSparse m2(rows, 1);
   solovev_a_matrix_stl::MatrixInCcsSparse m3(rows, 1);
@@ -57,7 +60,7 @@ TEST(solovev_a_ccs_mmult_sparse_stl, test_pipeline_run) {
   auto test_task_sequential = std::make_shared<solovev_a_matrix_stl::SeqMatMultCcs>(task_data_seq);
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
-  perf_attr->num_running = 10000;
+  perf_attr->num_running = 10;
   const auto t0 = std::chrono::high_resolution_clock::now();
   perf_attr->current_timer = [&] {
     auto current_time_point = std::chrono::high_resolution_clock::now();
@@ -76,7 +79,7 @@ TEST(solovev_a_ccs_mmult_sparse_stl, test_pipeline_run) {
 }
 
 TEST(solovev_a_ccs_mmult_sparse_stl, test_task_run) {
-  int size = 10000;
+  int size = n;
   solovev_a_matrix_stl::MatrixInCcsSparse m1(size, size);
   solovev_a_matrix_stl::MatrixInCcsSparse m2(size, 1);
   solovev_a_matrix_stl::MatrixInCcsSparse m3(size, 1);
@@ -104,7 +107,7 @@ TEST(solovev_a_ccs_mmult_sparse_stl, test_task_run) {
   auto test_task_sequential = std::make_shared<solovev_a_matrix_stl::SeqMatMultCcs>(task_data_seq);
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
-  perf_attr->num_running = 10000;
+  perf_attr->num_running = 10;
   const auto t0 = std::chrono::high_resolution_clock::now();
   perf_attr->current_timer = [&] {
     auto current_time_point = std::chrono::high_resolution_clock::now();
