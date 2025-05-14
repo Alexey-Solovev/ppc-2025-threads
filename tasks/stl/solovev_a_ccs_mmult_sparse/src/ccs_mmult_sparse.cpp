@@ -69,22 +69,12 @@ void solovev_a_matrix_stl::SeqMatMultCcs::WorkerLoop(solovev_a_matrix_stl::SeqMa
     if (col >= self->c_n_) {
       break;
     }
-
     available.assign(self->r_n_, 0);
-    if (self->c_n_ > 1000) {
-      volatile double dummy = 0.0;
-      int work_scale = static_cast<int>(std::log2(self->c_n_ + 1)) * 10000;
-      for (int k = 0; k < work_scale; ++k) {
-        dummy += std::sin(k) * std::cos(k);
-      }
-    }
-
     if (self->phase_ == 1) {
       ProcessPhase1(self, col, available);
     } else if (self->phase_ == 2) {
       ProcessPhase2(self, col, available, cask);
     }
-
     NotifyCompletion(self);
   }
 }
