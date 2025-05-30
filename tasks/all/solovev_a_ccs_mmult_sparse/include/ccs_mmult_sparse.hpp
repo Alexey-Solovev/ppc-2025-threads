@@ -1,10 +1,8 @@
 #pragma once
 
+#include <boost/serialization/access.hpp>
 #include <complex>
-#include <functional>
 #include <memory>
-#include <numeric>
-#include <thread>
 #include <utility>
 #include <vector>
 
