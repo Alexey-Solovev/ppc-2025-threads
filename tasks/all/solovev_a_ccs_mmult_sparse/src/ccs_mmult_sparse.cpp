@@ -35,23 +35,18 @@ void solovev_a_matrix_all::SeqMatMultCcs::ComputeColumnRange(int rank, int size,
 }
 
 void solovev_a_matrix_all::SeqMatMultCcs::ComputeSequential(
-    const std::vector<int>& col_indices,
-    std::vector<std::vector<std::pair<std::complex<double>, int>>>& column_results,
+    const std::vector<int>& col_indices, std::vector<std::vector<std::pair<std::complex<double>, int>>>& column_results,
     int start_col, int end_col,
-  const std::function<void(int, std::vector<std::pair<std::complex<double>, int>>&)> &func
-) {
+    const std::function<void(int, std::vector<std::pair<std::complex<double>, int>>&)> &func) {
   for (int j = start_col; j < end_col; ++j) {
     func(col_indices[j - start_col], column_results[j - start_col]);
   }
 }
 
 void solovev_a_matrix_all::SeqMatMultCcs::ComputeParallel(
-    const std::vector<int>& col_indices,
-    std::vector<std::vector<std::pair<std::complex<double>, int>>>& column_results,
-    int start_col, int end_col,
-    int num_threads,
-    const std::function<void(int, std::vector<std::pair<std::complex<double>, int>>&)> &func
-) {
+    const std::vector<int>& col_indices, std::vector<std::vector<std::pair<std::complex<double>, int>>>& column_results,
+    int start_col, int end_col, int num_threads,
+    const std::function<void(int, std::vector<std::pair<std::complex<double>, int>>&)> &func) {
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
 
